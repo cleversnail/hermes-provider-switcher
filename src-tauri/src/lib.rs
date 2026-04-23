@@ -135,7 +135,10 @@ fn update_provider(mut config: HermesConfig, old_name: String, provider: Provide
 
 #[tauri::command]
 fn delete_provider(mut config: HermesConfig, name: String) -> Result<HermesConfig, String> {
+    println!("delete_provider called with name: {}", name);
+    println!("providers before delete: {:?}", config.custom_providers);
     config.custom_providers.retain(|p| p.name != name);
+    println!("providers after delete: {:?}", config.custom_providers);
     save_config(config.clone())?;
     Ok(config)
 }

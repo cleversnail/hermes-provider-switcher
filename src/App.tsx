@@ -112,13 +112,51 @@ function App() {
 
   const handleDoubleClickActivate = async (name: string) => {
     if (!config) return;
+    // 检查是否是自定义 provider
+    const customProvider = config.custom_providers.find(p => p.name === name);
+    if (customProvider) {
+      // 自定义 provider：检查配置完整性
+      if (!customProvider.name || !customProvider.base_url || !customProvider.api_key) {
+        setError('请先完善该 Provider 的配置（名称、API 地址、API Key 为必填项）');
+        return;
+      }
+      try {
+        const newConfig = await invoke<HermesConfig>('switch_provider', {
+          config, providerName: name
+        });
+        setConfig(newConfig);
+        setSelectedProvider(name);
+        showSuccess(`已激活: ${name}`);
+      } catch (e) {
+        setError(String(e));
+      }
+    } else {
+      // 内置 provider：预填充编辑器，让用户填写 API Key 后保存为自定义 provider
+      const template = templates.find(t => t.name === name);
+      if (template) {
+        setFormData({
+          name: template.name,
+          base_url: template.base_url,
+          api_key: '',
+          model: template.default_model,
+          api_mode: template.api_mode || ''
+        });
+        setEditingProvider(null);
+        setIsEditing(false);
+        setShowEditor(true);
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!config || !selectedProvider) return;
     try {
-      const newConfig = await invoke<HermesConfig>('switch_provider', {
-        config, providerName: name
+      const newConfig = await invoke<HermesConfig>('delete_provider', {
+        config, name: selectedProvider
       });
       setConfig(newConfig);
-      setSelectedProvider(name);
-      showSuccess(`已激活: ${name}`);
+      setSelectedProvider(null);
+      showSuccess('已删除');
     } catch (e) {
       setError(String(e));
     }
@@ -153,32 +191,34 @@ function App() {
 
   const handleEdit = () => {
     if (!config || !selectedProvider) return;
-    const provider = config.custom_providers.find(p => p.name === selectedProvider);
-    if (!provider) return;
-    setFormData({
-      name: provider.name,
-      base_url: provider.base_url,
-      api_key: provider.api_key,
-      model: provider.model || '',
-      api_mode: provider.api_mode || ''
-    });
-    setEditingProvider(provider);
-    setIsEditing(true);
-    setShowEditor(true);
-  };
-
-  const handleDelete = async () => {
-    if (!config || !selectedProvider) return;
-    if (!confirm(`确定要删除 Provider "${selectedProvider}" 吗？`)) return;
-    try {
-      const newConfig = await invoke<HermesConfig>('delete_provider', {
-        config, name: selectedProvider
+    // 先尝试从 custom_providers 查找
+    const customProvider = config.custom_providers.find(p => p.name === selectedProvider);
+    if (customProvider) {
+      setFormData({
+        name: customProvider.name,
+        base_url: customProvider.base_url,
+        api_key: customProvider.api_key,
+        model: customProvider.model || '',
+        api_mode: customProvider.api_mode || ''
       });
-      setConfig(newConfig);
-      setSelectedProvider(null);
-      showSuccess('已删除');
-    } catch (e) {
-      setError(String(e));
+      setEditingProvider(customProvider);
+      setIsEditing(true);
+      setShowEditor(true);
+    } else {
+      // 内置 provider：从模板查找并预填充
+      const template = templates.find(t => t.name === selectedProvider);
+      if (template) {
+        setFormData({
+          name: template.name,
+          base_url: template.base_url,
+          api_key: '',
+          model: template.default_model,
+          api_mode: template.api_mode || ''
+        });
+        setEditingProvider(null);
+        setIsEditing(false);
+        setShowEditor(true);
+      }
     }
   };
 
@@ -248,16 +288,51 @@ function App() {
 
   const getCurrentProvider = (): Provider | null => {
     if (!config?.model.base_url) return null;
-    return config.custom_providers.find(p => p.base_url === config.model.base_url) || null;
+    const match = config.custom_providers.find(p => p.base_url === config.model.base_url);
+    if (match) return match;
+    // 如果 base_url 不在 custom_providers 中，说明是内置 Provider
+    // 返回一个虚拟的 Provider 对象用于显示（包含 API key）
+    return {
+      name: config.model.provider,
+      base_url: config.model.base_url || '',
+      api_key: config.model.api_key || '',
+      model: config.model.default || undefined,
+      api_mode: config.model.api_mode || undefined
+    };
+  };
+
+  const isProviderConfigComplete = (): boolean => {
+    if (!config || !selectedProvider) return false;
+    const provider = config.custom_providers.find(p => p.name === selectedProvider);
+    if (!provider) return false;
+    return !!(provider.name && provider.base_url && provider.api_key);
+  };
+
+  const isBuiltInProvider = (provider: Provider): boolean => {
+    return !config?.custom_providers.some(p => p.name === provider.name);
   };
 
   const currentProvider = getCurrentProvider();
 
-  const sortedProviders = config?.custom_providers.slice().sort((a, b) => {
+  // 构建完整的列表：custom_providers + 当前激活的内置 provider（如果不在 custom_providers 中）
+  const allProvidersList = (): Provider[] => {
+    if (!config) return [];
+    const customProviders = config.custom_providers;
+    const activeBuiltIn = currentProvider && isBuiltInProvider(currentProvider) ? [currentProvider] : [];
+    return [...activeBuiltIn, ...customProviders];
+  };
+
+  const sortedProviders = allProvidersList().sort((a, b) => {
+    // 当前激活的排最前
     if (a.name === currentProvider?.name) return -1;
     if (b.name === currentProvider?.name) return 1;
+    // 内置 provider 排在自定义之前
+    const aBuiltIn = isBuiltInProvider(a);
+    const bBuiltIn = isBuiltInProvider(b);
+    if (aBuiltIn && !bBuiltIn) return -1;
+    if (!aBuiltIn && bBuiltIn) return 1;
     return a.name.localeCompare(b.name);
-  }) || [];
+  });
 
   if (loading) {
     return (
@@ -309,7 +384,15 @@ function App() {
           </div>
           {currentProvider ? (
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">{currentProvider.name}</h2>
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-2xl font-bold text-white">{currentProvider.name}</h2>
+                {config && !config.custom_providers.some(p => p.base_url === config.model.base_url) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded-full">
+                    <Star className="w-3 h-3" />
+                    内置
+                  </span>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2 text-sm">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/20 rounded-full text-indigo-300">
                   <Cpu className="w-3.5 h-3.5" />
@@ -437,6 +520,12 @@ function App() {
                           当前
                         </span>
                       )}
+                      {!isCurrent && isBuiltInProvider(provider) && (
+                        <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full flex items-center gap-1">
+                          <Star className="w-3 h-3" />
+                          内置
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -506,7 +595,7 @@ function App() {
         <div className="mt-6 flex flex-wrap gap-3 animate-fade-in">
           <button
             onClick={handleActivate}
-            disabled={!selectedProvider || currentProvider?.name === selectedProvider}
+            disabled={!selectedProvider || !isProviderConfigComplete() || currentProvider?.name === selectedProvider}
             className="flex-1 min-w-[140px] flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-all shadow-lg shadow-indigo-500/20"
           >
             <Zap className="w-4 h-4" />
@@ -536,7 +625,8 @@ function App() {
           </button>
           <button
             onClick={handleDelete}
-            disabled={!selectedProvider}
+            disabled={!selectedProvider || !config?.custom_providers.some(p => p.name === selectedProvider)}
+            title={!selectedProvider ? '请先选择要删除的 Provider' : '删除选中的 Provider'}
             className="flex items-center gap-2 px-5 py-3 bg-red-900/30 hover:bg-red-900/50 disabled:opacity-40 disabled:cursor-not-allowed text-red-400 rounded-xl transition-colors border border-red-800/50"
           >
             <Trash2 className="w-4 h-4" />
