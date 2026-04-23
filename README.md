@@ -20,7 +20,7 @@
 
 ## 简介
 
-**Hermes Provider Switcher** 是一个为 [Hermes Agent](https://github.com/snail/hermes) 打造的桌面配置工具。它让你可以：
+**Hermes Provider Switcher** 是一个为 [Hermes Agent](https://github.com/cleversnail/hermes) 打造的桌面配置工具。它让你可以：
 
 - 预配置多个 AI Provider（OpenAI、Anthropic、Gemini、DeepSeek 等）
 - 通过点击按钮快速切换当前使用的 Provider
@@ -38,6 +38,14 @@
 - **API Key 管理** — 显示/隐藏/复制 API Key，安全便捷
 - **配置持久化** — 所有配置保存在 `~/.hermes/config.yaml` 中
 - **跨平台** — 支持 macOS、Windows、Linux
+
+## 系统要求
+
+| 平台 | 最低版本 | 架构 |
+|------|---------|------|
+| macOS | 10.13+ | Apple Silicon (M1/M2/M3) |
+| Windows | Windows 10+ | x64 |
+| Linux | Ubuntu 20.04+ | x64 |
 
 ## 支持的 Provider
 
@@ -62,11 +70,14 @@
 
 ### 下载预构建版本
 
-前往 [Releases](https://github.com/snail/hermes-provider-switcher/releases) 页面下载对应平台的安装包：
+前往 [Releases](https://github.com/cleversnail/hermes-provider-switcher/releases) 页面下载对应平台的安装包：
 
-- **macOS**: `Hermes-Provider-Switcher_1.0.0_x64.dmg` (Intel) 或 `_aarch64.dmg` (Apple Silicon)
-- **Windows**: `Hermes-Provider-Switcher_1.0.0_x64-setup.exe`
-- **Linux**: `Hermes-Provider-Switcher_1.0.0_amd64.AppImage` 或 `.deb`
+| 平台 | 下载文件 | 说明 |
+|------|---------|------|
+| **macOS** | `Hermes-Provider-Switcher_v1.x.x_macOS.dmg` | Apple Silicon (M1/M2/M3) |
+| **Windows** | `Hermes-Provider-Switcher_v1.x.x_Windows-setup.exe` | 64-bit 安装程序 |
+| **Linux** | `Hermes-Provider-Switcher_v1.x.x_amd64.AppImage` | 通用 AppImage |
+| **Linux** | `Hermes-Provider-Switcher_v1.x.x_amd64.deb` | Debian/Ubuntu 包 |
 
 ### 从源码构建
 
@@ -77,7 +88,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/snail/hermes-provider-switcher.git
+git clone https://github.com/cleversnail/hermes-provider-switcher.git
 cd hermes-provider-switcher
 
 # 安装依赖
@@ -90,7 +101,14 @@ npm run tauri dev
 npm run tauri build
 ```
 
-构建完成后，安装包位于 `src-tauri/target/release/bundle/` 目录。
+构建完成后，安装包位于 `src-tauri/target/release/bundle/` 目录：
+
+| 平台 | 输出路径 |
+|------|---------|
+| macOS | `src-tauri/target/release/bundle/dmg/*.dmg` |
+| Windows | `src-tauri/target/release/bundle/nsis/*.exe` |
+| Linux | `src-tauri/target/release/bundle/deb/*.deb` |
+| Linux | `src-tauri/target/release/bundle/appimage/*.AppImage` |
 
 ## 使用方法
 
@@ -191,3 +209,9 @@ ProviderTemplate {
 ## 许可证
 
 MIT License © 2025 snail
+
+---
+
+<p align="center">
+  <sub>Made with ❤️ for Hermes Agent users</sub>
+</p>
