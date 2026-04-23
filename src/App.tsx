@@ -253,7 +253,6 @@ function App() {
 
   const currentProvider = getCurrentProvider();
 
-  // Group providers: active first, then others
   const sortedProviders = config?.custom_providers.slice().sort((a, b) => {
     if (a.name === currentProvider?.name) return -1;
     if (b.name === currentProvider?.name) return 1;
@@ -286,7 +285,7 @@ function App() {
           </div>
           <p className="text-gray-500 text-sm flex items-center justify-center gap-2">
             <Info className="w-3.5 h-3.5" />
-            一键切换 AI Provider，下次新会话生效
+            一键切换 AI Provider，Ctrl+C 退出当前 Hermes 对话并重进，即刻生效
           </p>
         </div>
 
@@ -547,7 +546,7 @@ function App() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-gray-600 text-xs space-y-1">
-          <p>修改配置后，下次启动 Hermes 会话时生效</p>
+          <p>修改配置后，Ctrl+C 退出当前 Hermes 对话并重进，即刻生效</p>
           {configPath && (
             <p className="flex items-center justify-center gap-1 text-gray-700">
               <FolderOpen className="w-3 h-3" />
@@ -708,7 +707,7 @@ function App() {
                   <div className="bg-indigo-900/20 border border-indigo-500/20 rounded-lg p-3 flex items-start gap-2">
                     <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
                     <p className="text-xs text-indigo-300">
-                      添加后点击"激活"即可将当前 Hermes 配置切换到此 Provider。下次启动新会话时生效。
+                      添加后点击"激活"即可将当前 Hermes 配置切换到此 Provider。Ctrl+C 退出当前 Hermes 对话并重进，即刻生效。
                     </p>
                   </div>
                 )}
