@@ -285,7 +285,7 @@ function App() {
           </div>
           <p className="text-gray-500 text-sm flex items-center justify-center gap-2">
             <Info className="w-3.5 h-3.5" />
-            一键切换 AI Provider，Ctrl+C 退出当前 Hermes 对话并重进，即刻生效
+            一键切换 AI Provider
           </p>
         </div>
 
