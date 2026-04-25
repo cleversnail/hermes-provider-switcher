@@ -19,7 +19,7 @@
 ---
 
 ## 简介
-
+                                 超级无敌大蜗牛
 **Hermes Provider Switcher** 是一个为 [Hermes Agent](https://github.com/cleversnail/hermes) 打造的桌面配置工具。它让你可以：
 
 - 预配置多个 AI Provider（OpenAI、Anthropic、Gemini、DeepSeek 等）
